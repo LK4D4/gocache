@@ -1,13 +1,25 @@
-/* Basic TCP server */
-package tcp
+package main
 
 import (
 	"bufio"
-	"commands"
+	"clparse"
 	"fmt"
 	log "logging"
 	"net"
 )
+
+func processTcpInput(input string) (string, error) {
+	command, argString := clparse.SplitCommand(input)
+	opts, ok := commandsMap[command]
+	if !ok {
+		return "", commandErr{fmt.Sprintf("Wrong command %s", command)}
+	}
+	args, err := clparse.ParseArgs(argString, opts.argNumber)
+	if err != nil {
+		return "", commandErr{err.Error()}
+	}
+	return opts.f(args...), nil
+}
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
@@ -17,7 +29,7 @@ func handleConnection(conn net.Conn) {
 	for scanner.Scan() {
 		trimmedString := scanner.Text()
 		log.Debug("Incomming command: %s", trimmedString)
-		res, err := commands.ProcessTcpInput(trimmedString)
+		res, err := processTcpInput(trimmedString)
 		if err != nil {
 			fmt.Fprintf(conn, "%v\n", err)
 			continue
@@ -26,7 +38,7 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
-func RunServer(port int) {
+func runServer(port int) {
 	addr := fmt.Sprintf(":%d", port)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {

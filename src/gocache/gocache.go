@@ -5,7 +5,6 @@ import (
 	"flag"
 	log "logging"
 	"runtime"
-	"tcp"
 )
 
 var port int
@@ -41,5 +40,5 @@ func main() {
 	log.SetVerbosity(verbose)
 	log.Info("Running gocache on %v cores", ncpu)
 	runtime.GOMAXPROCS(ncpu)
-	tcp.RunServer(port)
+	runServer(port)
 }
