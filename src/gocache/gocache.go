@@ -4,7 +4,6 @@ package main
 import (
 	"flag"
 	log "logging"
-	"runtime"
 )
 
 var port int
@@ -32,7 +31,7 @@ func flagString(f *string, aliases []string, value string, usage string) {
 func init() {
 	flagInt(&port, []string{"port", "p"}, 6090, "Port for incomming connections")
 	flagInt(&verbose, []string{"verbose", "v"}, 4, "Logging verbosity")
-	flagInt(&ncpu, []string{"ncpu", "n"}, runtime.NumCPU(), "Number of max used cores")
+	flagInt(&ncpu, []string{"ncpu", "n"}, 1, "Number of max used cores")
 }
 
 func main() {
