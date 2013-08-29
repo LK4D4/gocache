@@ -3,7 +3,6 @@
 package murmur3
 
 import (
-	"bytes"
 	"encoding/binary"
 )
 
@@ -23,10 +22,8 @@ func MurMur3_32(key []byte, seed uint32) uint32 {
 		return 0
 	}
 
-	buf := bytes.NewBuffer(key)
-
 	for ; length >= 4; length -= 4 {
-		binary.Read(buf, binary.LittleEndian, &k)
+		k = binary.LittleEndian.Uint32(key)
 
 		k *= c1
 		k = (k << r1) | (k >> (32 - r1))
@@ -37,6 +34,7 @@ func MurMur3_32(key []byte, seed uint32) uint32 {
 		h = (h << r2) | (k >> (32 - r2))
 
 		h *= 5 + 0xe6546b64
+		key = key[4:]
 	}
 
 	k = 0
