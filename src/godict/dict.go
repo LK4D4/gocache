@@ -160,7 +160,7 @@ func (d *Dict) rehash(newsize uint32) {
 		d.Lock()
 		if e.data != nil {
 			slot := d.sparedict.findSlot(e.key, e.hash, d.sparemask)
-			slot.Init(e.key, e.value, e.hash)
+			slot.data = e.data
 		}
 		e.rehashed = true
 		d.Unlock()
