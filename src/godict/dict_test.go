@@ -1,9 +1,25 @@
 package godict
 
 import (
+	"math/rand"
 	"runtime"
 	"testing"
 )
+
+const chars = "abcdefghijklmnopqrstuvwxyz" +
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+	"~!@#$%^&*()-_+={}[]\\|<,>.?/\"';:` "
+
+func randomString(length int) string {
+
+	res := make([]byte, length)
+
+	for i := 0; i < length; i++ {
+		res[i] = chars[rand.Intn(len(chars))]
+	}
+
+	return string(res)
+}
 
 func isEmpty(e entry, t *testing.T) {
 	if e.data != nil {
@@ -79,6 +95,20 @@ func Test_Set(t *testing.T) {
 
 	if elt.deleted {
 		t.Error("Element found but already marked as deleted")
+	}
+}
+
+func BenchmarkSet(b *testing.B) {
+	testTable := make([]string, 10000)
+	for i := 0; i < len(testTable); i++ {
+		testTable[i] = randomString(3)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d := New()
+		for _, elt := range testTable {
+			d.Set(elt, "1")
+		}
 	}
 }
 

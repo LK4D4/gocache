@@ -4,6 +4,7 @@ package main
 import (
 	"flag"
 	log "logging"
+	"runtime"
 )
 
 var port int
