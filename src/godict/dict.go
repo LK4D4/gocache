@@ -9,7 +9,8 @@ import (
 
 const hash_seed uint32 = 6012
 const perturb_shift = 5
-const resize_ratio = 1.5
+const activeMul uint32 = 3
+const sizeMul uint32 = 2
 
 func GenHash(key string) uint32 {
 	return mmh.MurMur3_32([]byte(key), hash_seed)
@@ -54,7 +55,7 @@ func (d *Dict) Set(key, value string) error {
 	d.active++
 	d.Unlock()
 
-	d.resizeIfNeeded()
+	go d.resizeIfNeeded()
 
 	return nil
 }
@@ -181,7 +182,7 @@ func (d *Dict) rehash(newsize uint32) {
 func (d *Dict) isReadyForResize() bool {
 	d.Lock()
 	defer d.Unlock()
-	if float64(d.mask+1)/float64(d.active) >= resize_ratio || d.rehashing {
+	if ((d.mask+1)*sizeMul >= d.active*activeMul) || d.rehashing {
 		return false
 	}
 	d.rehashing = true
