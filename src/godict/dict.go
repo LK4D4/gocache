@@ -3,6 +3,7 @@ package godict
 
 import (
 	"fmt"
+	log "logging"
 	mmh "murmur3"
 	"sync"
 )
@@ -43,6 +44,8 @@ func (d *Dict) Active() uint32 {
 func (d *Dict) Set(key, value string) error {
 
 	hash := GenHash(key)
+
+	log.Debug("Rehashing status %v", d.rehashing)
 
 	d.Lock()
 	slot, err := d.lookUpEntry(key, hash)
@@ -145,6 +148,7 @@ func (d *Dict) lookUpEntry(key string, hash uint32) (*entry, error) {
 	}
 
 	if slot.rehashed {
+		log.Debug("Slot for %q found, but it`s rehashed", key)
 		slot = d.sparedict.findSlot(key, hash, d.sparemask)
 	}
 
@@ -153,13 +157,17 @@ func (d *Dict) lookUpEntry(key string, hash uint32) (*entry, error) {
 
 // rehash make incremental rehashing to sparedict
 func (d *Dict) rehash(newsize uint32) {
+	log.Debug("Rehashing started")
+	defer log.Debug("Rehashing finished")
 
 	d.sparedict = make([]entry, newsize, newsize)
 	d.sparemask = newsize - 1
 
-	for _, e := range d.dict {
+	for i := range d.dict {
 		d.Lock()
+		e := &d.dict[i]
 		if e.data != nil {
+			log.Debug("Rehashing key %q", e.key)
 			slot := d.sparedict.findSlot(e.key, e.hash, d.sparemask)
 			slot.data = e.data
 		}
