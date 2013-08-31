@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"runtime"
 	"testing"
+	"time"
 )
 
 const chars = "abcdefghijklmnopqrstuvwxyz" +
@@ -114,7 +115,7 @@ func BenchmarkSet(b *testing.B) {
 
 //Test_Set tests setting elements in dict and resize on 2/3 fill
 func Test_SetAndResize(t *testing.T) {
-	//runtime.GOMAXPROCS(2)
+	runtime.GOMAXPROCS(2)
 
 	d := New()
 
@@ -150,9 +151,7 @@ func Test_SetAndResize(t *testing.T) {
 	}
 
 	// waiting for rehash, cause of deadlock
-	for d.rehashing {
-		runtime.Gosched()
-	}
+	time.Sleep(time.Second / 10)
 
 	if d.mask != 15 {
 		t.Errorf("Wrong mask %v after resize, must be 15", d.mask)
@@ -206,10 +205,7 @@ func Test_SetAndResize(t *testing.T) {
 		}
 	}
 
-	// waiting for rehash, cause of deadlock
-	for d.rehashing {
-		runtime.Gosched()
-	}
+	time.Sleep(time.Second / 10)
 
 	if d.mask != 31 {
 		t.Errorf("Wrong mask %v after resize, must be 31", d.mask)
