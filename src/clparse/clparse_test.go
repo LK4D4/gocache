@@ -70,3 +70,9 @@ func Test_ParseArgsErrors(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkParse(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ParseArgs(`"strkeysad" "\"\,asdasd\"\""`, 2)
+	}
+}
