@@ -6,13 +6,20 @@ import (
 	log "logging"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
 	"runtime"
+	"runtime/pprof"
 )
 
-var port int
-var verbose int
-var ncpu int
-var profile bool
+var (
+	sig         chan os.Signal
+	port        int
+	verbose     int
+	ncpu        int
+	httpprofile bool
+	cpuprofile  string
+)
 
 func flagBool(f *bool, aliases []string, value bool, usage string) {
 	for _, alias := range aliases {
@@ -36,19 +43,32 @@ func init() {
 	flagInt(&port, []string{"port", "p"}, 6090, "Port for incomming connections")
 	flagInt(&verbose, []string{"verbose", "v"}, 4, "Logging verbosity")
 	flagInt(&ncpu, []string{"ncpu", "n"}, 1, "Number of max used cores")
-	flagBool(&profile, []string{"profile"}, false, "Run net/http/pprof server")
+	flagBool(&httpprofile, []string{"httpprofile"}, false, "Run net/http/pprof server")
+	flagString(&cpuprofile, []string{"cpuprofile"}, "", "Write cpuprofile info to file")
+	sig = make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, os.Kill)
 }
 
 func main() {
 	flag.Parse()
-	log.SetVerbosity(verbose)
-	log.Info("Running gocache on %v cores", ncpu)
-	if profile {
+	if httpprofile {
 		go func() {
 			log.Info("Run profile on localhost:6060")
 			log.Err(http.ListenAndServe("localhost:6060", nil).Error())
 		}()
 	}
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
+		if err != nil {
+			log.Err(err.Error())
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+	log.SetVerbosity(verbose)
+	log.Info("Running gocache on %v cores", ncpu)
 	runtime.GOMAXPROCS(ncpu)
-	runServer(port)
+	go runServer(port)
+	s := <-sig
+	log.Info("Got signal: %v", s)
 }
