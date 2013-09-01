@@ -3,37 +3,18 @@
 package clparse
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
 )
 
-type ParseResult []string
+const defaultCap = 1024
 
 type ArgNumError int
 
 func (e ArgNumError) Error() string {
 	return fmt.Sprintf("Wrong number of arguments, must be %v", int(e))
-}
-
-func (res ParseResult) RawArg(buffer *bytes.Buffer) ParseResult {
-	if buffer.Len() > 0 {
-		res = append(res, buffer.String())
-		buffer.Reset()
-	}
-	return res
-}
-
-func (res ParseResult) QuotedArg(buffer *bytes.Buffer) (ParseResult, error) {
-	unq, err := strconv.Unquote(buffer.String())
-	if err != nil {
-		return res, err
-	}
-	res = append(res, unq)
-	buffer.Reset()
-	return res, nil
 }
 
 func SplitCommand(input string) (command, argpart string) {
@@ -46,54 +27,59 @@ func SplitCommand(input string) (command, argpart string) {
 
 func ParseArgs(argString string, argNum int) ([]string, error) {
 
-	var buffer = new(bytes.Buffer)
 	var isq bool // is we in quote
-	var err error = nil
 
-	res := make(ParseResult, 0)
+	res := make([]string, 0, argNum)
+	buf := make([]byte, 0, defaultCap)
 
 	if argNum == 0 && argString != "" {
 		return res, ArgNumError(argNum)
 	}
 
 	for i := 0; i < len(argString); i++ {
-		if len(res) >= argNum {
+		if len(res) == argNum {
 			return res, ArgNumError(argNum)
 		}
-		ch := rune(argString[i])
+		ch := argString[i]
 		if ch == '"' {
-			buffer.WriteRune('"')
+			buf = append(buf, '"')
 			if isq {
 				if len(argString) > i+1 && !unicode.IsSpace(rune(argString[i+1])) {
 					return res, fmt.Errorf("Closing quote must follow by space character or nothing at all")
 				}
-				res, err = res.QuotedArg(buffer)
+				unq, err := strconv.Unquote(string(buf))
 				if err != nil {
 					return res, err
 				}
+				res = append(res, unq)
+				buf = buf[:0]
 			}
 			isq = !isq
 			continue
 		}
 		if isq {
-			buffer.WriteRune(ch)
+			buf = append(buf, ch)
 			if ch == '\\' {
 				i++
-				ch := rune(argString[i])
-				buffer.WriteRune(ch)
+				buf = append(buf, argString[i])
 			}
 			continue
 		}
 		if ch == ' ' {
-			res = res.RawArg(buffer)
+			if len(buf) > 0 {
+				res = append(res, string(buf))
+				buf = buf[:0]
+			}
 			continue
 		}
-		buffer.WriteRune(ch)
+		buf = append(buf, ch)
 	}
 	if isq {
 		return res, fmt.Errorf("Unbalanced quotes")
 	}
-	res = res.RawArg(buffer)
+	if len(buf) > 0 {
+		res = append(res, string(buf))
+	}
 
 	if len(res) != argNum {
 		return res, ArgNumError(argNum)
