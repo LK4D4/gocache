@@ -18,11 +18,11 @@ func (e ArgNumError) Error() string {
 }
 
 func SplitCommand(input string) (command, argpart string) {
-	splited := strings.SplitN(input, " ", 2)
-	if len(splited) == 1 {
-		return splited[0], ""
+	index := strings.IndexRune(input, ' ')
+	if index == -1 {
+		return input, ""
 	}
-	return splited[0], splited[1]
+	return input[0:index], input[index+1:]
 }
 
 func ParseArgs(argString string, argNum int) ([]string, error) {

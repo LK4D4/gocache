@@ -76,3 +76,26 @@ func BenchmarkParse(b *testing.B) {
 		ParseArgs(`"strkeysad" "\"\,asdasd\"\""`, 2)
 	}
 }
+
+var argForSplit = []struct {
+	input           string
+	expectedCommand string
+	expectedArgs    string
+}{
+	{`set "a b" 1`, "set", `"a b" 1`},
+	{`delete`, "delete", ``},
+}
+
+func TestSplit(t *testing.T) {
+	for _, argSplit := range argForSplit {
+		command, args := SplitCommand(argSplit.input)
+		if command != argSplit.expectedCommand {
+			t.Errorf("Command: %q, expected: %q, input was: %q",
+				command, argSplit.expectedCommand, argSplit.input)
+		}
+		if args != argSplit.expectedArgs {
+			t.Errorf("Arguments: %q, expected: %q, input was: %q",
+				args, argSplit.expectedArgs, argSplit.input)
+		}
+	}
+}
