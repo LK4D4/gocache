@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "logging"
 	mmh "murmur3"
+	"runtime"
 	"sync"
 )
 
@@ -12,6 +13,7 @@ const hash_seed uint32 = 6012
 const perturb_shift = 5
 const activeMul uint32 = 3
 const sizeMul uint32 = 2
+const rehashChunk = 1000
 
 func GenHash(key string) uint32 {
 	return mmh.MurMur3_32([]byte(key), hash_seed)
@@ -155,6 +157,21 @@ func (d *Dict) lookUpEntry(key string, hash uint32) (*entry, error) {
 	return slot, nil
 }
 
+func (d *Dict) rehashChunk(l, r uint32) {
+	d.Lock()
+	defer d.Unlock()
+	tmp := d.dict[l:r]
+	for i := range tmp {
+		e := &tmp[i]
+		if e.data != nil {
+			log.Debug("Rehashing key %q", e.key)
+			slot := d.sparedict.findSlot(e.key, e.hash, d.sparemask)
+			slot.data = e.data
+		}
+		e.rehashed = true
+	}
+}
+
 // rehash make incremental rehashing to sparedict
 func (d *Dict) rehash(newsize uint32) {
 	log.Debug("Rehashing started")
@@ -163,17 +180,18 @@ func (d *Dict) rehash(newsize uint32) {
 	d.sparedict = make([]entry, newsize, newsize)
 	d.sparemask = newsize - 1
 
-	for i := range d.dict {
-		d.Lock()
-		e := &d.dict[i]
-		if e.data != nil {
-			log.Debug("Rehashing key %q", e.key)
-			slot := d.sparedict.findSlot(e.key, e.hash, d.sparemask)
-			slot.data = e.data
-		}
-		e.rehashed = true
-		d.Unlock()
+	var lb, rb uint32 = 0, rehashChunk
+
+	dlen := d.mask + 1
+
+	for ; rb <= dlen; lb, rb = rb, rb+rehashChunk {
+		d.rehashChunk(lb, rb)
+		runtime.Gosched()
 	}
+	if lb != dlen {
+		d.rehashChunk(lb, dlen)
+	}
+
 	d.Lock()
 	defer d.Unlock()
 	d.mask = d.sparemask
