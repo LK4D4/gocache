@@ -4,12 +4,15 @@ package main
 import (
 	"flag"
 	log "logging"
+	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 )
 
 var port int
 var verbose int
 var ncpu int
+var profile bool
 
 func flagBool(f *bool, aliases []string, value bool, usage string) {
 	for _, alias := range aliases {
@@ -33,12 +36,19 @@ func init() {
 	flagInt(&port, []string{"port", "p"}, 6090, "Port for incomming connections")
 	flagInt(&verbose, []string{"verbose", "v"}, 4, "Logging verbosity")
 	flagInt(&ncpu, []string{"ncpu", "n"}, 1, "Number of max used cores")
+	flagBool(&profile, []string{"profile"}, false, "Run net/http/pprof server")
 }
 
 func main() {
 	flag.Parse()
 	log.SetVerbosity(verbose)
 	log.Info("Running gocache on %v cores", ncpu)
+	if profile {
+		go func() {
+			log.Info("Run profile on localhost:6060")
+			log.Err(http.ListenAndServe("localhost:6060", nil).Error())
+		}()
+	}
 	runtime.GOMAXPROCS(ncpu)
 	runServer(port)
 }
