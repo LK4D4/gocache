@@ -84,6 +84,7 @@ var argForSplit = []struct {
 }{
 	{`set "a b" 1`, "set", `"a b" 1`},
 	{`delete`, "delete", ``},
+	{`delete   a b c`, "delete", `a b c`},
 }
 
 func TestSplit(t *testing.T) {

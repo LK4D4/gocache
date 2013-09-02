@@ -22,7 +22,10 @@ func SplitCommand(input string) (command, argpart string) {
 	if index == -1 {
 		return input, ""
 	}
-	return input[0:index], input[index+1:]
+	lindex := index + 1
+	for ; input[lindex] == ' ' && lindex < len(input); lindex++ {
+	}
+	return input[0:index], input[lindex:]
 }
 
 func ParseArgs(argString string, argNum int) ([]string, error) {
