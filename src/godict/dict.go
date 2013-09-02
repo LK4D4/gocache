@@ -9,14 +9,18 @@ import (
 	"sync"
 )
 
-const hash_seed uint32 = 6012
-const perturb_shift = 5
-const activeMul uint32 = 3
-const sizeMul uint32 = 2
-const rehashChunk = 1000
+const (
+	// constants for ratio computing
+	activeMul uint32 = 3
+	sizeMul   uint32 = 2
+
+	hashSeed     uint32 = 6012
+	perturbShift uint32 = 5
+	rehashChunk  uint32 = 1000
+)
 
 func GenHash(key string) uint32 {
-	return mmh.MurMur3_32([]byte(key), hash_seed)
+	return mmh.MurMur3_32([]byte(key), hashSeed)
 }
 
 func New() *Dict {
@@ -118,7 +122,7 @@ func (ht hashTable) findSlot(key string, hash, mask uint32) *entry {
 		}
 	}
 
-	for perturb := hash; ; perturb >>= perturb_shift {
+	for perturb := hash; ; perturb >>= perturbShift {
 		index = ((index << 2) + index + perturb + 1) & mask
 		slot = &ht[index]
 

@@ -27,14 +27,14 @@ func handleConnection(conn net.Conn) {
 	log.Debug("Incomming connection: %v", conn.RemoteAddr())
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
-		trimmedString := scanner.Text()
-		log.Debug("Incomming command: %s", trimmedString)
-		res, err := processTcpInput(trimmedString)
+		input := scanner.Text()
+		log.Debug("Incomming command: %s", input)
+		res, err := processTcpInput(input)
 		if err != nil {
-			fmt.Fprintf(conn, "%v\n", err)
+			fmt.Fprintln(conn, err)
 			continue
 		}
-		fmt.Fprintf(conn, "%s\n", res)
+		fmt.Fprintln(conn, res)
 	}
 }
 

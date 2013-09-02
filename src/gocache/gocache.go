@@ -62,6 +62,7 @@ func main() {
 		if err != nil {
 			log.Err(err.Error())
 		}
+		log.Info("Writing cpuprofile to %v", cpuprofile)
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
