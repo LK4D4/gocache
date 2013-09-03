@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	dict "godict"
+	"strconv"
 )
 
 var storage = dict.New()
@@ -29,6 +30,7 @@ var commandsMap = map[string]commandOpt{
 	"set":    {2, set},
 	"get":    {1, get},
 	"delete": {1, delete},
+	"expire": {2, expire},
 }
 
 func set(args ...string) string {
@@ -48,8 +50,18 @@ func get(args ...string) string {
 }
 
 func delete(args ...string) string {
-	err := storage.Delete(args[0])
+	if err := storage.Delete(args[0]); err != nil {
+		return fmt.Sprintf(errFormat, err)
+	}
+	return "OK"
+}
+
+func expire(args ...string) string {
+	exp, err := strconv.ParseUint(args[1], 0, 32)
 	if err != nil {
+		return fmt.Sprintf(errFormat, err)
+	}
+	if err := storage.Expire(args[0], uint32(exp)); err != nil {
 		return fmt.Sprintf(errFormat, err)
 	}
 	return "OK"
