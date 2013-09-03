@@ -60,7 +60,8 @@ func (d *Dict) Set(key, value string) error {
 		return err
 	}
 
-	slot.Init(key, value, hash)
+	slot.init(key, value, hash)
+	slot.access()
 	d.active++
 	d.Unlock()
 
@@ -70,18 +71,21 @@ func (d *Dict) Set(key, value string) error {
 }
 
 //Get retrieve slot from dict, spawn error if no key in dict
-func (d *Dict) Get(key string) (slot *entry, err error) {
+func (d *Dict) Get(key string) (*entry, error) {
 	hash := GenHash(key)
 
 	d.RLock()
 	defer d.RUnlock()
-	slot, err = d.lookUpEntry(key, hash)
 
-	if err == nil && slot.data == nil {
-		err = fmt.Errorf("Key %v missing in the dictionary", key)
+	slot, err := d.lookUpFilledEntry(key, hash)
+
+	if err != nil {
+		return slot, err
 	}
 
-	return
+	slot.access()
+
+	return slot, nil
 }
 
 //Delete mark slot as deleted and wipe it`s data, spawn error if no key in dict
@@ -90,18 +94,31 @@ func (d *Dict) Delete(key string) error {
 
 	d.Lock()
 	defer d.Unlock()
-	slot, err := d.lookUpEntry(key, hash)
+	slot, err := d.lookUpFilledEntry(key, hash)
 
 	if err != nil {
 		return err
 	}
 
-	if slot.data == nil {
-		return fmt.Errorf("Key %v missing in the dictionary", key)
-	}
-
 	slot.delete()
 	d.active--
+
+	return nil
+}
+
+func (d *Dict) Expire(key string, sec uint32) error {
+	hash := GenHash(key)
+
+	d.Lock()
+	defer d.Unlock()
+	slot, err := d.lookUpFilledEntry(key, hash)
+
+	if err != nil {
+		return err
+	}
+
+	slot.access()
+	slot.setExpire(sec)
 
 	return nil
 }
@@ -156,6 +173,24 @@ func (d *Dict) lookUpEntry(key string, hash uint32) (*entry, error) {
 	if slot.rehashed {
 		log.Debug("Slot for %q found, but it`s rehashed", key)
 		slot = d.sparedict.findSlot(key, hash, d.sparemask)
+	}
+
+	return slot, nil
+}
+
+func (d *Dict) lookUpFilledEntry(key string, hash uint32) (*entry, error) {
+	slot, err := d.lookUpEntry(key, hash)
+
+	if err != nil {
+		return slot, err
+	}
+
+	if slot.data == nil || slot.expired() {
+		return slot, fmt.Errorf("Key %v missing in the dictionary", key)
+	}
+
+	if slot == nil {
+		return nil, fmt.Errorf("Not slot found for key %v, hash %v", key, hash)
 	}
 
 	return slot, nil
