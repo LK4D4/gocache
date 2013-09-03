@@ -28,8 +28,8 @@ func isEmpty(e entry, t *testing.T) {
 	}
 }
 
-//Test_CreateNew tests parameters of new dictionary
-func Test_CreateNew(t *testing.T) {
+//TestCreateNew tests parameters of new dictionary
+func TestCreateNew(t *testing.T) {
 	d := New()
 
 	if d.active != 0 {
@@ -56,8 +56,8 @@ func Test_CreateNew(t *testing.T) {
 	}
 }
 
-//Test_Set tests setting elements in dict
-func Test_Set(t *testing.T) {
+//TestSet tests setting elements in dict
+func TestSet(t *testing.T) {
 	d := New()
 
 	d.Set("a", "1")
@@ -113,8 +113,8 @@ func BenchmarkSet(b *testing.B) {
 	}
 }
 
-//Test_Set tests setting elements in dict and resize on 2/3 fill
-func Test_SetAndResize(t *testing.T) {
+//TestSet tests setting elements in dict and resize on 2/3 fill
+func TestSetAndResize(t *testing.T) {
 	runtime.GOMAXPROCS(2)
 
 	d := New()
@@ -220,8 +220,8 @@ func Test_SetAndResize(t *testing.T) {
 	}
 }
 
-//Test_Get tests getting element from dict
-func Test_Get(t *testing.T) {
+//TestGet tests getting element from dict
+func TestGet(t *testing.T) {
 	d := New()
 
 	d.Set("a", "1")
@@ -237,8 +237,8 @@ func Test_Get(t *testing.T) {
 	}
 }
 
-//Test_GetUnexisting tests getting element from dict without setting it first
-func Test_GetUnexisting(t *testing.T) {
+//TestGetUnexisting tests getting element from dict without setting it first
+func TestGetUnexisting(t *testing.T) {
 	d := New()
 
 	slot, err := d.Get("a")
@@ -251,8 +251,8 @@ func Test_GetUnexisting(t *testing.T) {
 
 }
 
-//Test_Delete tests deleting element from dict
-func Test_Delete(t *testing.T) {
+//TestDelete tests deleting element from dict
+func TestDelete(t *testing.T) {
 	d := New()
 
 	d.Set("a", "1")
@@ -288,8 +288,8 @@ func Test_Delete(t *testing.T) {
 	}
 }
 
-//Test_DeleteUnexisting tests delete element from dict without setting it first
-func Test_DeleteUnexisting(t *testing.T) {
+//TestDeleteUnexisting tests delete element from dict without setting it first
+func TestDeleteUnexisting(t *testing.T) {
 	d := New()
 
 	err := d.Delete("a")
@@ -297,5 +297,33 @@ func Test_DeleteUnexisting(t *testing.T) {
 	if err == nil {
 		t.Errorf("Delete did not fail. dict: %v", d)
 	}
+}
 
+func TestExpire(t *testing.T) {
+	d := New()
+	d.Set("a", "1")
+	d.Expire("a", 1)
+	timeout := time.After(time.Second)
+	slot, err := d.Get("a")
+	if err != nil {
+		t.Errorf("Error before expire: %v", err)
+	}
+	if slot.Value() != "1" {
+		t.Errorf("Wrong slot value: %v", slot)
+	}
+	<-timeout
+	slot, err = d.Get("a")
+	if err == nil {
+		t.Errorf("Object wasn`t expired. dict: %v, slot: %v", d, slot)
+	}
+}
+
+func TestExpireUnexisting(t *testing.T) {
+	d := New()
+
+	err := d.Expire("a", 1)
+
+	if err == nil {
+		t.Errorf("Expire did not fail. dict: %v", d)
+	}
 }
