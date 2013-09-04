@@ -131,7 +131,7 @@ func (ht hashTable) findSlot(key string, hash, mask uint32) *entry {
 	index := hash & mask
 	slot := &ht[index]
 
-	if slot.deleted {
+	if slot.Deleted() {
 		freeSlot = slot
 	} else {
 		if slot.data == nil || slot.key == key {
@@ -143,7 +143,7 @@ func (ht hashTable) findSlot(key string, hash, mask uint32) *entry {
 		index = ((index << 2) + index + perturb + 1) & mask
 		slot = &ht[index]
 
-		if slot.deleted {
+		if slot.Deleted() {
 			if freeSlot == nil {
 				freeSlot = slot
 			}
@@ -185,7 +185,7 @@ func (d *Dict) lookUpFilledEntry(key string, hash uint32) (*entry, error) {
 		return slot, err
 	}
 
-	if slot.data == nil || slot.expired() {
+	if slot.data == nil {
 		return slot, fmt.Errorf("Key %v missing in the dictionary", key)
 	}
 

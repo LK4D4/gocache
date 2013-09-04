@@ -40,16 +40,19 @@ func (e *entry) setExpire(sec uint32) {
 	e.expire = time.Duration(sec) * time.Second
 }
 
-func (e *entry) expired() bool {
-	exp := e.expire != 0 && time.Since(e.Time) > e.expire
-	if exp {
-		e.delete()
-	}
-	return exp
-}
-
 func (e *entry) Value() string {
 	return e.value
+}
+
+func (e *entry) Deleted() bool {
+	if e.deleted {
+		return true
+	}
+	if e.expire != 0 && time.Since(e.Time) > e.expire {
+		e.delete()
+		return true
+	}
+	return false
 }
 
 func (e *entry) delete() {
