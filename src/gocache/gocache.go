@@ -13,12 +13,14 @@ import (
 )
 
 var (
-	sig         chan os.Signal
-	port        int
-	verbose     int
-	ncpu        int
-	httpprofile bool
+	host    string
+	ncpu    int
+	port    int
+	sig     chan os.Signal
+	verbose int
+
 	cpuprofile  string
+	httpprofile bool
 )
 
 func flagBool(f *bool, aliases []string, value bool, usage string) {
@@ -41,6 +43,7 @@ func flagString(f *string, aliases []string, value string, usage string) {
 
 func init() {
 	flagInt(&port, []string{"port", "p"}, 6090, "Port for incomming connections")
+	flagString(&host, []string{"host", "h"}, "127.0.0.1", "Host for incomming connections")
 	flagInt(&verbose, []string{"verbose", "v"}, 4, "Logging verbosity")
 	flagInt(&ncpu, []string{"ncpu", "n"}, 1, "Number of max used cores")
 	flagBool(&httpprofile, []string{"httpprofile"}, false, "Run net/http/pprof server")
@@ -69,7 +72,7 @@ func main() {
 	log.SetVerbosity(verbose)
 	log.Info("Running gocache on %v cores", ncpu)
 	runtime.GOMAXPROCS(ncpu)
-	go runServer(port)
+	go runServer(host, port)
 	s := <-sig
 	log.Info("Got signal: %v", s)
 }

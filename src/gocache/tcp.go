@@ -38,17 +38,17 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
-func runServer(port int) {
-	addr := fmt.Sprintf(":%d", port)
+func runServer(host string, port int) {
+	addr := fmt.Sprintf("%s:%d", host, port)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Err(err.Error())
+		log.Err("%v", err)
 	}
 	log.Info("Tcp listener running on %v", addr)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Err(err.Error())
+			log.Err("%v", err)
 			continue
 		}
 		go handleConnection(conn)
