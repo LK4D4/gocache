@@ -19,6 +19,7 @@ var argTable = []struct {
 		[]string{"set", "testing::key", "{\"key\": \"value\"}"}},
 	{`set "a\\" 1`, 3, []string{"set", "a\\", "1"}},
 	{`set "a" "x y "`, 3, []string{"set", "a", "x y "}},
+	{`юникод "арг1" "x y "`, 3, []string{"юникод", "арг1", "x y "}},
 }
 
 func isEqual(input, expected []string) bool {
